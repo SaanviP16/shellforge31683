@@ -1,0 +1,52 @@
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/wait.h>
+
+int main()
+{
+int fd[2];
+pid_t pid;
+char buffer[100];
+if (pipe(fd) == -1) // Create pipe
+{
+perror("pipe");
+exit(1);
+}
+pid = fork(); // Create child process
+if (pid < 0)
+{
+perror("fork");
+exit(1);
+}
+if (pid > 0) /* Parent Process */
+{
+close(fd[0]); // Close read end
+// Redirect stdout to pipe
+dup2(fd[1], STDOUT_FILENO);
+printf("Hello from Parent Process!\n");
+printf("This message is sent through the pipe.\n");
+fflush(stdout);
+close(fd[1]);
+wait(NULL);
+}
+else
+{
+/* Child Process */
+
+close(fd[1]); // Close write end
+
+// Redirect stdin from pipe
+dup2(fd[0], STDIN_FILENO);
+
+while (fgets(buffer, sizeof(buffer), stdin) != NULL)
+{
+printf("Child Received: %s", buffer);
+}
+
+close(fd[0]);
+}
+
+return 0;
+}
